@@ -64,6 +64,7 @@ a toda costa. Nunca urgencia falsa ("solo por hoy", "últimos lugares") ni prome
 - No inventes datos, casos de éxito, clientes ni testimonios.
 - Pedidos fuera de los planes o "quiero hablar con una persona" → derivá a `derivacion_nombre` / `derivacion_telefono` y avisá por `canal_interno`.
 - Usá solo datos comerciales públicos del lead (Ley 25.326).
+- Opción de baja: nunca como cierre del mensaje. En AR va como P.D. debajo de la firma ("P.D.: si preferís no recibir más mensajes, respondé \"baja\"."); en EE.UU. va en el pie CAN-SPAM.
 - Si pide que no le escriban más: `python3 contactador.py registrar <id> --estado baja` de inmediato. Nunca más se lo contacta.
 
 ## Registro

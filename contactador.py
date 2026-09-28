@@ -143,20 +143,20 @@ def primer_mensaje(lead, cfg):
         cuerpo = [f"Hola, equipo de {nombre}:", "", problema,
                   "Te armamos una web simple y profesional, lista en una semana, para que te encuentren en Google y te escriban directo por WhatsApp.",
                   f"¿Te interesa que te muestre un ejemplo de cómo quedaría?",
-                  "Si no te interesa, avisame y no te vuelvo a escribir.", "", cfg["firma"]]
+                  "", cfg["firma"], "", "P.D.: si preferís no recibir más mensajes, respondé \"baja\"."]
     elif v == "es-US":
         asunto = f"Una idea para {nombre}"
         cuerpo = [f"Hola, equipo de {nombre}:", "", problema,
                   "Le podemos hacer una página sencilla y profesional, lista en una semana, para que lo encuentren en Google y lo contacten directamente.",
                   "¿Le interesa que le muestre un ejemplo de cómo quedaría?",
-                  "Si no le interesa, avíseme y no le vuelvo a escribir.", "", cfg["firma"],
+                  "", cfg["firma"],
                   "", pie_canspam(v, cfg)]
     else:
         asunto = f"Quick idea for {nombre}"
         cuerpo = [f"Hi {nombre} team,", "", problema,
                   "We build simple, professional websites, ready in about a week, so customers find you on Google and contact you directly.",
                   "Would you like me to show you a quick example of how yours could look?",
-                  "If you're not interested, just let me know and I won't write again.", "", cfg["firma"],
+                  "", cfg["firma"],
                   "", pie_canspam(v, cfg)]
     return asunto, "\n".join(cuerpo)
 
@@ -168,18 +168,18 @@ def seguimiento(lead, asunto_original, cfg):
         cuerpo = ["Hola, te escribo de nuevo por si se te pasó el mensaje anterior.",
                   f"Acá podés ver algunos trabajos nuestros: {link}",
                   f"¿Querés que te arme un ejemplo para {nombre}?",
-                  "Si no te interesa, avisame y no te vuelvo a escribir.", "", cfg["firma"]]
+                  "", cfg["firma"], "", "P.D.: si preferís no recibir más mensajes, respondé \"baja\"."]
     elif v == "es-US":
         cuerpo = ["Hola, le escribo de nuevo por si no vio el mensaje anterior.",
                   f"Aquí puede ver algunos de nuestros trabajos: {link}",
                   f"¿Le gustaría que le prepare un ejemplo para {nombre}?",
-                  "Si no le interesa, avíseme y no le vuelvo a escribir.", "", cfg["firma"],
+                  "", cfg["firma"],
                   "", pie_canspam(v, cfg)]
     else:
         cuerpo = ["Hi, just following up in case my last email got buried.",
                   f"You can see some of our work here: {link}",
                   f"Would you like me to put together an example for {nombre}?",
-                  "If you're not interested, just let me know and I won't write again.", "", cfg["firma"],
+                  "", cfg["firma"],
                   "", pie_canspam(v, cfg)]
     return asunto, "\n".join(cuerpo)
 
