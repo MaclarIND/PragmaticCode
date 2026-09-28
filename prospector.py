@@ -18,7 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "")
+API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "").strip().strip("\"'")  # comillas o espacios pegados al copiar
 PLACES = "https://places.googleapis.com/v1"
 PAUSA_API = 1.0  # segundos entre requests a Places
 PAUSA_WEB = 1.5  # segundos entre requests a webs de negocios
@@ -93,8 +93,16 @@ def log_error(msg):
 
 def http(url, data=None, headers=None, timeout=15):
     req = urllib.request.Request(url, data=data, headers={"User-Agent": UA, **(headers or {})})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.status, r.geturl(), r.read(2_000_000).decode("utf-8", "replace")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status, r.geturl(), r.read(2_000_000).decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        cuerpo = e.read(20_000).decode("utf-8", "replace")
+        try:  # Google devuelve {"error": {"message": ...}}: mostrar el motivo real
+            cuerpo = json.loads(cuerpo)["error"]["message"]
+        except Exception:
+            cuerpo = cuerpo[:300]
+        raise RuntimeError(f"HTTP {e.code}: {cuerpo}") from None
 
 
 def places_search(query, lang, region):
@@ -214,7 +222,7 @@ def cargar_excluidos():
 
 
 def prospectar(pais, cupo, excluidos, vistos):
-    leads = []
+    leads, errores_seguidos = [], 0
     for ciudad, tz in CIUDADES[pais]:
         for rubro, q_es, q_en in RUBROS:
             consultas = []
@@ -227,8 +235,13 @@ def prospectar(pais, cupo, excluidos, vistos):
             for query, lang, query_es in consultas:
                 try:
                     resultados = places_search(query, lang, pais)
+                    errores_seguidos = 0
                 except Exception as e:
                     log_error(f"searchText '{query}': {e}")
+                    errores_seguidos += 1
+                    if errores_seguidos >= 3:  # casi siempre es la key o la API: no tiene sentido seguir
+                        sys.exit("Google rechazó 3 búsquedas seguidas. Revisá el mensaje de arriba "
+                                 "(API key, Places API (New) habilitada, facturación).")
                     continue
                 for r in resultados:
                     pid = r.get("id")
