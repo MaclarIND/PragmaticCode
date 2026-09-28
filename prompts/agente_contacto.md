@@ -78,3 +78,24 @@ python3 contactador.py registrar <id> --estado <estado> --canal email \
 Estados: contactado, respondió, interesado, propuesta_enviada, venta_cerrada, no_interesado, sin_respuesta, baja.
 En `venta_cerrada` agregá `--plan --precio --pago --responsable`; el script deja el aviso para `responsable_ventas`
 en `notificaciones_ventas.jsonl`.
+
+## Traspaso al programador
+Cuando se cierre una venta, además de avisar a `responsable_ventas`, generá `briefs/brief_[id].json` con el formato
+del agente programador (ver `prompts/agente_programador.md`): plan, idioma del sitio, contacto responsable,
+descripción del negocio, objetivo del sitio, secciones, servicios o productos, colores y estilo, referencias,
+dominio, redes, dirección y horarios, materiales y notas de la venta.
+
+1. `python3 contactador.py brief <id>` crea `briefs/datos_brief_<id>.json` con lo que ya sabemos del lead y la venta,
+   y lista lo que falta.
+2. Pedile al cliente todo lo necesario antes de cerrar el brief: logo, fotos, servicios/productos (con precios si es
+   tienda), dirección, horarios y redes. Si el cliente confirma que no tiene algo (logo, fotos, alguna red), poné `null`;
+   `""` o `[]` significa que todavía no se lo pediste. Si quiere algo fuera del plan, no lo sumes al brief: cotizalo aparte.
+3. Volvé a correr `brief <id>`: si no falta nada, genera `briefs/brief_<id>.json` para el programador.
+4. Nunca marques `pago_verificado` ni `pago_final_verificado`: los marca una persona después de confirmar el pago.
+
+### Avisos del programador
+`python3 contactador.py pendientes` muestra los `faltantes_[id].txt` y `extras_[id].txt` que deja el programador.
+- **Faltan materiales:** pedíselos al cliente, actualizá `datos_brief_<id>.json` y regenerá el brief.
+- **Extras o más de 2 rondas de cambios:** cotizalo con el cliente (misma moneda, mismas reglas de precio);
+  si es algo que no está en los planes, derivá a `derivacion_nombre`.
+- **Preview listo:** mandale al cliente el link con el resumen del programador y juntá sus correcciones.

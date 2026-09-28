@@ -11,6 +11,8 @@ Uso:
     python3 contactador.py seguimientos [--enviar]
     python3 contactador.py registrar <place_id> --estado respondió --resumen "..." \
         --proximo "mandar ejemplo" --fecha 2026-10-02
+    python3 contactador.py brief <place_id>     # tras venta_cerrada: arma el brief del programador
+    python3 contactador.py pendientes           # avisos del programador (faltantes / extras)
     python3 contactador.py estado
 """
 import argparse
@@ -28,6 +30,7 @@ REGISTRO = os.path.join(BASE, "leads_contactados.json")
 CONFIG = os.path.join(BASE, "config_contacto.json")
 OUTBOX = os.path.join(BASE, "outbox")
 VENTAS = os.path.join(BASE, "notificaciones_ventas.jsonl")
+BRIEFS = os.path.join(BASE, "briefs")
 LOG = os.path.join(BASE, "log_errores.txt")
 
 ESTADOS = ["contactado", "respondió", "interesado", "propuesta_enviada", "venta_cerrada",
@@ -353,11 +356,153 @@ def cmd_registrar(args, cfg):
                  "forma_pago": args.pago}
         with open(VENTAS, "a", encoding="utf-8") as f:
             f.write(json.dumps(aviso, ensure_ascii=False) + "\n")
+        lead.setdefault("pago_verificado", False)        # lo marca una persona, nunca un agente
+        lead.setdefault("pago_final_verificado", False)
+        lead["venta"] = {"plan": args.plan, "precio_final": args.precio, "forma_pago": args.pago,
+                         "responsable_cliente": args.responsable, "fecha": fecha}
+        lead["proximo_paso"] = "juntar materiales y generar el brief"
         print(f"Venta registrada. Avisar a {cfg['responsable_ventas']} por {cfg['canal_interno']}:\n"
               + json.dumps(aviso, ensure_ascii=False, indent=2))
+        print(f"\nSiguiente: python3 contactador.py brief {lead['id']}")
     guardar_registro(reg)
     print(f"{lead['nombre_empresa']}: {args.estado}")
 
+
+def tipo_plan(plan):
+    p = (plan or "").lower()
+    if "tienda" in p or "store" in p:
+        return "tienda"
+    if "profes" in p:
+        return "profesional"
+    return "basico"
+
+
+# Lo que incluye cada plan según el agente programador (prompts/agente_programador.md).
+SECCIONES = {
+    "basico": ["Inicio", "Servicios", "Sobre nosotros", "Ubicación", "Contacto"],
+    "profesional": ["Inicio", "Nosotros", "Servicios", "Galería", "Contacto"],
+    "tienda": ["Inicio", "Catálogo", "Carrito", "Nosotros", "Contacto"],
+}
+
+
+def plantilla_brief(lead):
+    """Formato de entrada del agente programador.
+    Convención: "" o [] = todavía no se le pidió al cliente; null = el cliente confirmó que no tiene."""
+    venta = lead.get("venta", {})
+    plan = tipo_plan(venta.get("plan"))
+    return {
+        "id": lead["id"],
+        "nombre_empresa": lead["nombre_empresa"],
+        "rubro": lead.get("rubro") or "",
+        "pais": lead["pais"],
+        "idioma_sitio": lead.get("idioma_contacto") or ("es" if lead["pais"] == "AR" else "en"),
+        "plan": plan,
+        "contacto_responsable": {"nombre": venta.get("responsable_cliente") or "",
+                                 "email": lead.get("email") or "", "telefono": lead.get("telefono") or ""},
+        "descripcion_negocio": "",
+        "objetivo_sitio": "",
+        "secciones": SECCIONES[plan],
+        "servicios_o_productos": [{"nombre": "", "descripcion": "", "precio": ""}],
+        "colores_y_estilo": "",
+        "referencias": [],
+        "dominio": "",
+        "redes": {"instagram": "", "facebook": "", "whatsapp": ""},
+        "direccion_y_horarios": "",
+        "materiales": {"logo": "", "fotos": [], "textos": None},
+        "notas_venta": lead.get("resumen") or "",
+    }
+
+
+def faltantes_brief(b):
+    """Lo que hay que pedirle al cliente antes de cerrar el brief."""
+    falta = []
+    if b.get("plan") not in SECCIONES:
+        falta.append("plan (basico / profesional / tienda)")
+    if b.get("idioma_sitio") not in ("es", "en", "ambos"):
+        falta.append("idioma del sitio (es / en / ambos)")
+    c = b.get("contacto_responsable", {})
+    for k, texto in [("nombre", "nombre del responsable"), ("email", "email del responsable"),
+                     ("telefono", "teléfono del responsable")]:
+        if not str(c.get(k) or "").strip():
+            falta.append(texto)
+    for campo, texto in [("descripcion_negocio", "descripción del negocio"), ("objetivo_sitio", "objetivo del sitio"),
+                         ("colores_y_estilo", "colores y estilo"),
+                         ("direccion_y_horarios", "dirección y horarios de atención")]:
+        if not str(b.get(campo) or "").strip():
+            falta.append(texto)
+    if b.get("dominio") == "":
+        falta.append("dominio (el que tiene o quiere registrar; null si lo elegimos nosotros)")
+    if not b.get("secciones"):
+        falta.append("secciones")
+    elif b.get("plan") == "profesional" and len(b["secciones"]) > 5:
+        falta.append("el Plan Profesional incluye hasta 5 secciones: ajustar o cotizar extra")
+    redes = b.get("redes") or {}
+    sin_pedir = [k for k in ("instagram", "facebook", "whatsapp") if redes.get(k) == ""]
+    if sin_pedir:
+        falta.append("redes: " + ", ".join(sin_pedir) + " (null si no tiene)")
+    items = [i for i in b.get("servicios_o_productos", []) if str(i.get("nombre") or "").strip()]
+    tienda = b.get("plan") == "tienda"
+    if not items:
+        falta.append("lista de productos con precio" if tienda else "lista de servicios")
+    elif tienda:
+        if any(not str(i.get("precio") or "").strip() for i in items):
+            falta.append("precio de todos los productos")
+        if len(items) > 50:
+            falta.append(f"el Plan Tienda incluye hasta 50 productos (hay {len(items)}): ajustar o cotizar extra")
+    mat = b.get("materiales") or {}
+    if mat.get("logo") == "":
+        falta.append("logo (null si no tiene)")
+    if mat.get("fotos") == []:
+        falta.append("fotos (null si no tiene)")
+    return falta
+
+
+def cmd_brief(args, cfg):
+    reg = cargar_json(REGISTRO, [])
+    lead = next((l for l in reg if l["id"] == args.id), None)
+    if not lead:
+        sys.exit(f"No existe el lead {args.id} en el registro")
+    if lead["estado"] != "venta_cerrada":
+        sys.exit("El brief se genera solo para ventas cerradas.")
+    os.makedirs(BRIEFS, exist_ok=True)
+    datos = os.path.join(BRIEFS, f"datos_brief_{args.id}.json")
+    if not os.path.exists(datos):
+        with open(datos, "w", encoding="utf-8") as f:
+            json.dump(plantilla_brief(lead), f, ensure_ascii=False, indent=2)
+        print(f"Plantilla creada en {datos}. Completala con lo que mande el cliente y volvé a correr este comando.")
+    with open(datos, encoding="utf-8") as f:
+        brief = json.load(f)
+    falta = faltantes_brief(brief)
+    if falta:
+        print("Falta pedirle al cliente:\n- " + "\n- ".join(falta))
+        lead["proximo_paso"] = "pedir al cliente: " + ", ".join(falta)
+        guardar_registro(reg)
+        return
+    salida = os.path.join(BRIEFS, f"brief_{args.id}.json")
+    with open(salida, "w", encoding="utf-8") as f:
+        json.dump(brief, f, ensure_ascii=False, indent=2)
+    lead.update(proximo_paso="desarrollo del sitio (agente programador)", fecha_proximo_paso=None)
+    lead["historial"].append({"fecha": ahora().isoformat(timespec="seconds"), "direccion": "evento",
+                              "canal": "interno", "tipo": "brief_generado"})
+    guardar_registro(reg)
+    print(f"Brief listo para el programador: {salida}")
+    if not lead.get("pago_verificado"):
+        print("Ojo: el programador no arranca hasta que una persona marque pago_verificado = true.")
+
+
+def cmd_pendientes(args, cfg):
+    """Avisos del programador (faltantes_/extras_) que hay que gestionar con el cliente."""
+    reg = {l["id"]: l for l in cargar_json(REGISTRO, [])}
+    avisos = sorted(f for f in os.listdir(BRIEFS) if f.startswith(("faltantes_", "extras_"))) \
+        if os.path.isdir(BRIEFS) else []
+    if not avisos:
+        print("No hay avisos del programador.")
+    for f in avisos:
+        pid = f.split("_", 1)[1].rsplit(".", 1)[0]
+        nombre = reg.get(pid, {}).get("nombre_empresa", pid)
+        tipo = "Faltan materiales" if f.startswith("faltantes_") else "Pedido fuera del plan (cotizar)"
+        with open(os.path.join(BRIEFS, f), encoding="utf-8") as fh:
+            print(f"## {nombre} — {tipo}\n{fh.read().strip()}\n")
 
 def cmd_estado(args, cfg):
     for l in cargar_json(REGISTRO, []):
@@ -375,13 +520,15 @@ def main():
     r.add_argument("--resumen"); r.add_argument("--proximo"); r.add_argument("--fecha")
     r.add_argument("--canal", choices=["email", "whatsapp", "llamada"])
     r.add_argument("--plan"); r.add_argument("--precio"); r.add_argument("--pago"); r.add_argument("--responsable")
+    b = sub.add_parser("brief"); b.add_argument("id")
+    sub.add_parser("pendientes")
     sub.add_parser("estado")
     args = ap.parse_args()
     cfg = cargar_json(CONFIG, None)
     if cfg is None:
         sys.exit("Falta config_contacto.json")
     {"procesar": cmd_procesar, "seguimientos": cmd_seguimientos,
-     "registrar": cmd_registrar, "estado": cmd_estado}[args.cmd](args, cfg)
+     "registrar": cmd_registrar, "brief": cmd_brief, "pendientes": cmd_pendientes, "estado": cmd_estado}[args.cmd](args, cfg)
 
 
 if __name__ == "__main__":
