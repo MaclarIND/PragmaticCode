@@ -22,7 +22,7 @@ import os
 import smtplib
 import sys
 from email.message import EmailMessage
-from email.utils import make_msgid
+from email.utils import make_msgid, parseaddr
 from zoneinfo import ZoneInfo
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -213,8 +213,9 @@ def enviar_email(para, asunto, cuerpo, en_respuesta_a=None):
     msg = EmailMessage()
     remitente = os.environ["SMTP_FROM"]
     msg["From"], msg["To"], msg["Subject"] = remitente, para, asunto
-    msg["Message-ID"] = make_msgid(domain=remitente.split("@")[-1].strip(">"))
-    msg["List-Unsubscribe"] = f"<mailto:{remitente}?subject=unsubscribe>"
+    direccion = parseaddr(remitente)[1]
+    msg["Message-ID"] = make_msgid(domain=direccion.split("@")[-1])
+    msg["List-Unsubscribe"] = f"<mailto:{direccion}?subject=unsubscribe>"
     if en_respuesta_a:
         msg["In-Reply-To"] = msg["References"] = en_respuesta_a
     msg.set_content(cuerpo)
