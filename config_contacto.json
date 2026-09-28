@@ -1,0 +1,15 @@
+{
+  "firma": "Lucas — Pragmatic Code",
+  "empresa": "Pragmatic Code",
+  "portfolio_link": "[LINK]",
+  "direccion_fisica": "[DIRECCIÓN]",
+  "derivacion_nombre": "[NOMBRE]",
+  "derivacion_telefono": "[TELÉFONO]",
+  "canal_interno": "[CANAL INTERNO]",
+  "responsable_ventas": "[NOMBRE]",
+  "max_mensajes_por_hora": null,
+  "dias_para_seguimiento": 4,
+  "dias_para_sin_respuesta": 5,
+  "hora_inicio": 9,
+  "hora_fin": 18
+}
