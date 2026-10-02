@@ -25,6 +25,8 @@ from email.message import EmailMessage
 from email.utils import make_msgid, parseaddr
 from zoneinfo import ZoneInfo
 
+import entorno  # noqa: F401  carga .env si existe
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 REGISTRO = os.path.join(BASE, "leads_contactados.json")
 CONFIG = os.path.join(BASE, "config_contacto.json")

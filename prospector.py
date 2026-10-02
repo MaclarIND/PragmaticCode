@@ -18,6 +18,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import entorno  # noqa: F401  carga .env si existe
+
 API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "").strip().strip("\"'")  # comillas o espacios pegados al copiar
 PLACES = "https://places.googleapis.com/v1"
 PAUSA_API = 1.0  # segundos entre requests a Places

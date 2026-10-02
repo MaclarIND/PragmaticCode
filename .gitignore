@@ -2,3 +2,4 @@ log_errores.txt
 __pycache__/
 outbox/
 *.tmp
+.env
