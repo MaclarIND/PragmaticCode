@@ -14,6 +14,7 @@ Uso:
     python3 contactador.py brief <place_id>     # tras venta_cerrada: arma el brief del programador
     python3 contactador.py pendientes           # avisos del programador (faltantes / extras)
     python3 contactador.py estado
+    python3 contactador.py probar-email [--a-mi]   # revisa SMTP; --a-mi manda una prueba a tu propio mail
 """
 import argparse
 import datetime as dt
@@ -211,6 +212,28 @@ def validar_envio(cfg):
         sys.exit(f"Faltan variables de entorno para SMTP: {', '.join(faltan_env)}")
 
 
+def clave_smtp():
+    # Gmail muestra la contraseña de aplicación en grupos de 4 ("abcd efgh ..."): se le sacan los espacios.
+    return os.environ.get("SMTP_PASS", "").replace(" ", "").replace("\u00a0", "")
+
+
+def conectar_smtp():
+    host, puerto = os.environ["SMTP_HOST"].strip(), int(os.environ.get("SMTP_PORT", "587").strip() or 587)
+    if puerto == 465:
+        s = smtplib.SMTP_SSL(host, puerto, timeout=30)
+    else:
+        s = smtplib.SMTP(host, puerto, timeout=30)
+        s.starttls()
+    try:
+        s.login(os.environ["SMTP_USER"].strip(), clave_smtp())
+    except smtplib.SMTPAuthenticationError:
+        s.close()
+        sys.exit("Gmail rechazó el usuario o la contraseña (SMTP_USER / SMTP_PASS). SMTP_PASS tiene que ser una "
+                 "contraseña de aplicación de 16 letras (myaccount.google.com/apppasswords, con verificación en "
+                 "2 pasos activada), no la contraseña normal de Gmail. Probá con: python contactador.py probar-email")
+    return s
+
+
 def enviar_email(para, asunto, cuerpo, en_respuesta_a=None):
     msg = EmailMessage()
     remitente = os.environ["SMTP_FROM"]
@@ -221,9 +244,7 @@ def enviar_email(para, asunto, cuerpo, en_respuesta_a=None):
     if en_respuesta_a:
         msg["In-Reply-To"] = msg["References"] = en_respuesta_a
     msg.set_content(cuerpo)
-    with smtplib.SMTP(os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORT", "587")), timeout=30) as s:
-        s.starttls()
-        s.login(os.environ["SMTP_USER"], os.environ["SMTP_PASS"])
+    with conectar_smtp() as s:
         s.send_message(msg)
     return msg["Message-ID"]
 
@@ -513,6 +534,43 @@ def cmd_estado(args, cfg):
               f"{l.get('proximo_paso')} ({l.get('fecha_proximo_paso')})")
 
 
+def cmd_probar_email(args, cfg):
+    """Revisa las variables SMTP, se conecta y hace login. Con --a-mi se manda un email de prueba a SMTP_USER."""
+    ok = True
+    for k in ("SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_FROM"):
+        val = os.environ.get(k, "")
+        if not val and k == "SMTP_PORT":
+            print("OK     SMTP_PORT: vacía, se usa 587")
+        elif not val:
+            print(f"ERROR  {k}: vacía (cargala en .env o en las variables de entorno)")
+            ok = False
+        elif "PEG" in val.upper() or val.startswith("["):
+            print(f"ERROR  {k}: tiene el texto de ejemplo, no el valor real")
+            ok = False
+        elif k == "SMTP_PASS":
+            n = len(clave_smtp())
+            print(f"{'OK   ' if n == 16 else 'ERROR'}  SMTP_PASS: {n} caracteres sin espacios (tiene que tener 16)")
+            ok = ok and n == 16
+        else:
+            print(f"OK     {k}: {val}")
+    if not ok:
+        sys.exit("Corregí lo marcado con ERROR y volvé a probar.")
+    try:
+        with conectar_smtp():
+            print("OK     Conexión y login con el servidor de correo")
+    except OSError as e:
+        sys.exit(f"ERROR  No se pudo conectar a {os.environ['SMTP_HOST']}:{os.environ.get('SMTP_PORT', '587')} ({e}). "
+                 "Revisá internet, el antivirus/firewall, o probá SMTP_PORT=465.")
+    if args.a_mi:
+        enviar_email(os.environ["SMTP_USER"].strip(), "Prueba Pragmatic Code", "Si leés esto, el envío funciona.")
+        print(f"OK     Email de prueba enviado a {os.environ['SMTP_USER']} (revisá también Spam).")
+    pendientes = [k for k, val in cfg.items() if isinstance(val, str) and val.startswith("[")]
+    if pendientes:
+        print(f"AVISO  Para enviar a leads falta completar en config_contacto.json: {', '.join(pendientes)}")
+    if not cfg.get("max_mensajes_por_hora"):
+        print("AVISO  Para enviar a leads falta definir max_mensajes_por_hora en config_contacto.json (ej: 10)")
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -526,11 +584,12 @@ def main():
     b = sub.add_parser("brief"); b.add_argument("id")
     sub.add_parser("pendientes")
     sub.add_parser("estado")
+    t = sub.add_parser("probar-email"); t.add_argument("--a-mi", action="store_true")
     args = ap.parse_args()
     cfg = cargar_json(CONFIG, None)
     if cfg is None:
         sys.exit("Falta config_contacto.json")
-    {"procesar": cmd_procesar, "seguimientos": cmd_seguimientos,
+    {"probar-email": cmd_probar_email, "procesar": cmd_procesar, "seguimientos": cmd_seguimientos,
      "registrar": cmd_registrar, "brief": cmd_brief, "pendientes": cmd_pendientes, "estado": cmd_estado}[args.cmd](args, cfg)
 
 
