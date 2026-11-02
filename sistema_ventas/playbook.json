@@ -17,7 +17,7 @@
       },
       {
         "id": "AR-SW-A2",
-        "texto": "Hola, vi {dato_observable} de {nombre}. Busqué su web y no encontré ninguna. Armamos páginas para {rubro} listas en 5 días. ¿Te sirve tener una?",
+        "texto": "Hola, vi {dato_observable} de {nombre}. Busqué su web y no encontré ninguna. Armamos páginas para {rubro} listas en una semana. ¿Te sirve tener una?",
         "canal": "ambos",
         "enviados": 0,
         "puntos": 0,
@@ -39,7 +39,7 @@
         "mutacion": null,
         "creada": "2026-11-02",
         "motivo_baja": null,
-        "pendiente_aprobacion": false
+        "pendiente_aprobacion": true
       }
     ],
     "AR_con_web": [
@@ -58,7 +58,7 @@
       },
       {
         "id": "AR-CW-A2",
-        "texto": "Hola, vi {dato_observable} de {nombre} y entré a su web. Hacemos rediseños para {rubro} listos en 5 días. ¿Pensaste en renovarla?",
+        "texto": "Hola, vi {dato_observable} de {nombre} y entré a su web. Hacemos rediseños para {rubro} listos en una semana. ¿Pensaste en renovarla?",
         "canal": "ambos",
         "enviados": 0,
         "puntos": 0,
@@ -80,7 +80,7 @@
         "mutacion": null,
         "creada": "2026-11-02",
         "motivo_baja": null,
-        "pendiente_aprobacion": false
+        "pendiente_aprobacion": true
       }
     ],
     "US_sin_web": [
@@ -99,7 +99,7 @@
       },
       {
         "id": "US-SW-A2",
-        "texto": "Hi, I saw {dato_observable} about {nombre} and couldn't find a website. We build sites for {rubro} businesses, ready in 5 days. Would one be useful for you?",
+        "texto": "Hi, I saw {dato_observable} about {nombre} and couldn't find a website. We build sites for {rubro} businesses, ready in a week. Would one be useful for you?",
         "canal": "email",
         "enviados": 0,
         "puntos": 0,
@@ -121,7 +121,7 @@
         "mutacion": null,
         "creada": "2026-11-02",
         "motivo_baja": null,
-        "pendiente_aprobacion": false
+        "pendiente_aprobacion": true
       }
     ],
     "US_con_web": [
@@ -140,7 +140,7 @@
       },
       {
         "id": "US-CW-A2",
-        "texto": "Hi, I saw {dato_observable} about {nombre} and checked out your website. We redesign sites for {rubro} businesses in 5 days. Have you thought about a refresh?",
+        "texto": "Hi, I saw {dato_observable} about {nombre} and checked out your website. We redesign sites for {rubro} businesses in a week. Have you thought about a refresh?",
         "canal": "email",
         "enviados": 0,
         "puntos": 0,
@@ -162,7 +162,7 @@
         "mutacion": null,
         "creada": "2026-11-02",
         "motivo_baja": null,
-        "pendiente_aprobacion": false
+        "pendiente_aprobacion": true
       }
     ]
   },

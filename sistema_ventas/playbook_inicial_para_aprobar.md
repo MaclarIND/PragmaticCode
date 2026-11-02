@@ -3,31 +3,31 @@
 Marcadores que el agente reemplaza: `{nombre}`, `{rubro}`, `{dato_observable}`, `{portfolio}`.
 
 ## Apertura
-_Varía solo el gancho/oferta: 1 = pregunta sobre cómo les llegan clientes · 2 = entrega en 5 días · 3 = sin costo inicial + mantenimiento_
+_Varía solo el gancho/oferta: 1 = pregunta sobre cómo les llegan clientes · 2 = lista en una semana · 3 = sin costo inicial + mantenimiento_
 
 **AR_sin_web** (canal: ambos)
 
 - `AR-SW-A1` Hola, vi {dato_observable} de {nombre}. Busqué su web y no encontré ninguna. ¿Hoy los clientes nuevos te llegan solo por Maps y boca en boca?
-- `AR-SW-A2` Hola, vi {dato_observable} de {nombre}. Busqué su web y no encontré ninguna. Armamos páginas para {rubro} listas en 5 días. ¿Te sirve tener una?
-- `AR-SW-A3` Hola, vi {dato_observable} de {nombre}. Busqué su web y no encontré ninguna. Te la armamos sin costo inicial y solo pagás el mantenimiento mensual. ¿Te interesa?
+- `AR-SW-A2` Hola, vi {dato_observable} de {nombre}. Busqué su web y no encontré ninguna. Armamos páginas para {rubro} listas en una semana. ¿Te sirve tener una?
+- `AR-SW-A3` (pendiente de aprobación) Hola, vi {dato_observable} de {nombre}. Busqué su web y no encontré ninguna. Te la armamos sin costo inicial y solo pagás el mantenimiento mensual. ¿Te interesa?
 
 **AR_con_web** (canal: ambos)
 
 - `AR-CW-A1` Hola, vi {dato_observable} de {nombre} y entré a su web. ¿Te llegan consultas desde la página o la mayoría viene por otro lado?
-- `AR-CW-A2` Hola, vi {dato_observable} de {nombre} y entré a su web. Hacemos rediseños para {rubro} listos en 5 días. ¿Pensaste en renovarla?
-- `AR-CW-A3` Hola, vi {dato_observable} de {nombre} y entré a su web. La rediseñamos sin costo inicial y solo pagás el mantenimiento mensual. ¿Te interesa?
+- `AR-CW-A2` Hola, vi {dato_observable} de {nombre} y entré a su web. Hacemos rediseños para {rubro} listos en una semana. ¿Pensaste en renovarla?
+- `AR-CW-A3` (pendiente de aprobación) Hola, vi {dato_observable} de {nombre} y entré a su web. La rediseñamos sin costo inicial y solo pagás el mantenimiento mensual. ¿Te interesa?
 
 **US_sin_web** (canal: email)
 
 - `US-SW-A1` Hi, I saw {dato_observable} about {nombre} and couldn't find a website. Do new customers mostly find you through Google Maps and word of mouth?
-- `US-SW-A2` Hi, I saw {dato_observable} about {nombre} and couldn't find a website. We build sites for {rubro} businesses, ready in 5 days. Would one be useful for you?
-- `US-SW-A3` Hi, I saw {dato_observable} about {nombre} and couldn't find a website. We can build one with no upfront cost, you'd just pay monthly maintenance. Interested?
+- `US-SW-A2` Hi, I saw {dato_observable} about {nombre} and couldn't find a website. We build sites for {rubro} businesses, ready in a week. Would one be useful for you?
+- `US-SW-A3` (pendiente de aprobación) Hi, I saw {dato_observable} about {nombre} and couldn't find a website. We can build one with no upfront cost, you'd just pay monthly maintenance. Interested?
 
 **US_con_web** (canal: email)
 
 - `US-CW-A1` Hi, I saw {dato_observable} about {nombre} and checked out your website. Do you get inquiries through it, or do most customers come from somewhere else?
-- `US-CW-A2` Hi, I saw {dato_observable} about {nombre} and checked out your website. We redesign sites for {rubro} businesses in 5 days. Have you thought about a refresh?
-- `US-CW-A3` Hi, I saw {dato_observable} about {nombre} and checked out your website. We can redesign it with no upfront cost, you'd just pay monthly maintenance. Interested?
+- `US-CW-A2` Hi, I saw {dato_observable} about {nombre} and checked out your website. We redesign sites for {rubro} businesses in a week. Have you thought about a refresh?
+- `US-CW-A3` (pendiente de aprobación) Hi, I saw {dato_observable} about {nombre} and checked out your website. We can redesign it with no upfront cost, you'd just pay monthly maintenance. Interested?
 
 ## Seguimiento sin respuesta (día 3 y día 7)
 _Varía solo el gancho: 1 = pregunta directa · 2 = Google · 3 = plantilla adaptada a su gusto_

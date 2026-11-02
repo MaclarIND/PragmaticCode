@@ -7,6 +7,9 @@ Tres agentes que trabajan en cadena:
    `leads_contactados.json`, cierre de venta y brief en `briefs/`.
 3. **programador** (`prompts/agente_programador.md`): programa el sitio desde `briefs/brief_[id].json`.
 
+4. **sistema_ventas/** (`scheduler.py`): versión con aprendizaje del vendedor — tres agentes (ventas, playbook, auditor)
+   que miden variantes de mensaje y las mejoran. Ver `sistema_ventas/README.md`.
+
 Comandos: `/buscar-leads`, `/contactar`, `/seguimientos`, `/responder`, `/brief`, `/programar`, `/estado`.
 
 ## Reglas del proyecto
