@@ -148,12 +148,14 @@ def primer_mensaje(lead, cfg):
         asunto = f"Una idea para {nombre}"
         cuerpo = [f"Hola, equipo de {nombre}:", "", problema,
                   "Te armamos una web simple y profesional, lista en una semana, para que te encuentren en Google y te escriban directo por WhatsApp.",
+                  "Partimos de nuestras plantillas y las adaptamos a tu gusto: colores, textos, fotos y secciones.",
                   f"¿Te interesa que te muestre un ejemplo de cómo quedaría?",
                   "", cfg["firma"], "", "P.D.: si preferís no recibir más mensajes, respondé \"baja\"."]
     elif v == "es-US":
         asunto = f"Una idea para {nombre}"
         cuerpo = [f"Hola, equipo de {nombre}:", "", problema,
                   "Le podemos hacer una página sencilla y profesional, lista en una semana, para que lo encuentren en Google y lo contacten directamente.",
+                  "Partimos de nuestras plantillas y las adaptamos a su gusto: colores, textos, fotos y secciones.",
                   "¿Le interesa que le muestre un ejemplo de cómo quedaría?",
                   "", cfg["firma"],
                   "", pie_canspam(v, cfg)]
@@ -161,6 +163,7 @@ def primer_mensaje(lead, cfg):
         asunto = f"Quick idea for {nombre}"
         cuerpo = [f"Hi {nombre} team,", "", problema,
                   "We build simple, professional websites, ready in about a week, so customers find you on Google and contact you directly.",
+                  "We start from our templates and customize them to your taste: colors, copy, photos and sections.",
                   "Would you like me to show you a quick example of how yours could look?",
                   "", cfg["firma"],
                   "", pie_canspam(v, cfg)]
@@ -173,17 +176,20 @@ def seguimiento(lead, asunto_original, cfg):
     if v == "es-AR":
         cuerpo = ["Hola, te escribo de nuevo por si se te pasó el mensaje anterior.",
                   f"Acá podés ver algunos trabajos nuestros: {link}",
+                  "Cualquier plantilla se puede modificar a tu gusto, para que quede con la identidad de tu negocio.",
                   f"¿Querés que te arme un ejemplo para {nombre}?",
                   "", cfg["firma"], "", "P.D.: si preferís no recibir más mensajes, respondé \"baja\"."]
     elif v == "es-US":
         cuerpo = ["Hola, le escribo de nuevo por si no vio el mensaje anterior.",
                   f"Aquí puede ver algunos de nuestros trabajos: {link}",
+                  "Cualquier plantilla se puede modificar a su gusto, para que quede con la identidad de su negocio.",
                   f"¿Le gustaría que le prepare un ejemplo para {nombre}?",
                   "", cfg["firma"],
                   "", pie_canspam(v, cfg)]
     else:
         cuerpo = ["Hi, just following up in case my last email got buried.",
                   f"You can see some of our work here: {link}",
+                  "Any template can be customized to your taste so it matches your brand.",
                   f"Would you like me to put together an example for {nombre}?",
                   "", cfg["firma"],
                   "", pie_canspam(v, cfg)]
