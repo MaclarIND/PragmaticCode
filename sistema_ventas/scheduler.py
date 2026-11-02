@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Scheduler: python scheduler.py   (dejarlo corriendo; Ctrl+C para parar)
 
-- Agente 1 (ventas):   cada 15 minutos.
+- Buzón (IMAP) + Agente 1 (ventas): cada 15 minutos.
+- Importar leads del buscador (y correr prospector.py si hay GOOGLE_PLACES_API_KEY): una vez por día.
 - Agente 2 (playbook): chequeo cada hora; ejecuta solo si hay 30 cerradas sin procesar o pasaron 7 días.
 - Agente 3 (auditor):  lunes 9:00 (America/Argentina/Buenos_Aires).
 Cada corrida queda en logs/AAAA-MM-DD.log. Si un agente falla, se loguea y el scheduler sigue.
@@ -16,13 +17,15 @@ from zoneinfo import ZoneInfo
 BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(BASE, "agentes"))
 import comun as c  # noqa: E402
+import entorno  # noqa: E402,F401  (.env del repo)
 
 ESTADO = os.path.join(c.LOGS, "estado_scheduler.json")
 
 
-def correr(agente):
+def correr(agente, arg=None):
     c.log("scheduler", f"→ {agente}")
-    r = subprocess.run([sys.executable, os.path.join(BASE, "agentes", f"{agente}.py")], capture_output=True, text=True)
+    cmd = [sys.executable, os.path.join(BASE, "agentes", f"{agente}.py")] + ([arg] if arg else [])
+    r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         c.log("scheduler", f"{agente} falló:\n{r.stderr.strip()[-2000:]}")
 
@@ -34,7 +37,9 @@ def main():
     while True:
         ahora = time.time()
         if ahora - estado.get("ventas", 0) >= 15 * 60:
-            correr("ventas"); estado["ventas"] = ahora
+            correr("buzon"); correr("ventas"); estado["ventas"] = ahora
+        if ahora - estado.get("importar", 0) >= 24 * 60 * 60:
+            correr("importar_leads", "--buscar" if os.environ.get("GOOGLE_PLACES_API_KEY") else None); estado["importar"] = ahora
         if ahora - estado.get("playbook", 0) >= 60 * 60:
             correr("playbook"); estado["playbook"] = ahora
         local = dt.datetime.now(ZoneInfo(c.TZ_AR))

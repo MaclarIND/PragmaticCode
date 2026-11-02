@@ -5,7 +5,7 @@ Mantiene todas las reglas que ya tenía el vendedor (idioma, horarios, canales, 
 personalizables, traspaso al programador): están en `agentes/prompts/ventas.md` y, las que son duras, en el código.
 
 ```
-python scheduler.py          # lo deja corriendo: ventas cada 15 min · playbook cada hora (si corresponde) · auditor lunes 9:00
+python scheduler.py          # lo deja corriendo: buzón+ventas cada 15 min · leads 1 vez/día · playbook cada hora (si corresponde) · auditor lunes 9:00
 python simular.py            # prueba el ciclo completo con 50 leads falsos, sin red ni datos reales
 python aprobar.py            # lista / aprueba / rechaza ofertas pendientes
 python agentes/ventas.py     # cualquier agente también se corre a mano
@@ -15,35 +15,44 @@ Requisitos: Python 3.11+, sin librerías extra. Clave de Claude en la variable d
 del repo, igual que las demás). Modelo: `CLAUDE_MODEL` (por defecto `claude-sonnet-5-5`). Sin clave, los agentes corren
 igual con respuestas de respaldo deterministas (útil para probar; no para vender).
 
-## Cómo entran los leads
-El buscador deja un archivo por lead en `leads/entrada/`:
+## Cómo se envía solo (modo real)
+Todo el envío real se activa con una sola variable en el `.env` del repo: `SV_MODO_REAL=1`. Sin ella, los conectores
+solo loguean (es lo que usa `simular.py`). Con ella, `python scheduler.py` hace todo sin intervención:
+busca leads una vez por día (si hay `GOOGLE_PLACES_API_KEY`), lee el buzón y manda aperturas, respuestas y seguimientos
+cada 15 minutos, y aprende cada semana.
+
+**Email (automático):** usa el SMTP de Gmail que ya configuraste para `contactador.py` (`SMTP_*`, contraseña de
+aplicación). Las respuestas se leen solas por IMAP con las mismas credenciales (`agentes/buzon.py`): activá IMAP en
+Gmail (Ver todos los ajustes → Reenvío y correo POP/IMAP → Habilitar IMAP). Se procesan solo los correos no leídos
+de direcciones que tienen una conversación abierta; el resto no se toca. `python ../contactador.py probar-email --a-mi`
+verifica el SMTP.
+
+**WhatsApp:** hay dos situaciones.
+- *Sin la API de Meta* (WhatsApp o WhatsApp Business común en el teléfono): no existe una forma permitida de que un
+  programa mande mensajes desde ese número; las librerías que automatizan WhatsApp Web violan las condiciones de Meta y
+  terminan con el número bloqueado, y escribir en frío a celulares es ilegal en EE.UU. (TCPA). Por eso el sistema abre
+  siempre por email, y cuando un lead sigue por WhatsApp deja el mensaje listo en `whatsapp_pendientes.md` con un link
+  `wa.me` que lo abre escrito en tu teléfono: un toque y sale. Es lo único que no es 100% automático.
+- *Con la API oficial de Meta* (WhatsApp Business Platform, gratis hasta 1.000 conversaciones/mes): todo es automático.
+  Variables: `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, y para abrir conversaciones en Argentina `WHATSAPP_PLANTILLA_AR`
+  (nombre de una plantilla aprobada por Meta con dos parámetros: {{1}} nombre del negocio, {{2}} dato observable).
+  Las respuestas llegan por webhook: `python agentes/webhook_whatsapp.py` escucha en el puerto 8787; hay que exponerlo
+  con HTTPS (Cloudflare Tunnel o ngrok) y cargar la URL en Meta for Developers → WhatsApp → Configuration → Webhook con
+  `WEBHOOK_VERIFY_TOKEN`. Alta: business.facebook.com → WhatsApp Manager; podés migrar tu número actual de WhatsApp
+  Business a la API (deja de funcionar en la app del teléfono).
+
+**Leads:** `agentes/importar_leads.py` convierte los `leads_*.json` del buscador al formato de `leads/entrada/`
+(el scheduler lo corre una vez por día con `--buscar`, que ejecuta `prospector.py` antes). También podés dejar
+archivos a mano en `leads/entrada/`:
 ```json
 { "lead_id": "...", "nombre": "...", "rubro": "...", "pais": "AR|US", "email": "...", "telefono": "...",
   "tiene_web": true, "url_web": "...|null", "dato_observable": "texto corto sobre el negocio visible públicamente" }
 ```
-`zona_horaria` es opcional (si falta: Buenos Aires para AR, Nueva York para US). Sin `email` no se contacta: el primer
-contacto es siempre por email (TCPA en EE.UU., Ley 25.326 en AR). No se escribe a nadie que esté en `bajas.json` ni en
-`leads_contactados.json` del repo (la memoria del vendedor anterior); cada lead contactado se agrega ahí para que el
-buscador no lo vuelva a proponer.
-
-## Cómo conectar email y WhatsApp
-Todo está en `agentes/conectores.py`. Hoy son stubs que loguean en `logs/` y devuelven un id falso.
-1. **Email:** el repo ya tiene SMTP probado en `../contactador.py` (`enviar_email`, Gmail con contraseña de aplicación,
-   variables `SMTP_*`). En `conectores.enviar_email` descomentá las tres líneas marcadas y poné `MODO_REAL = True`.
-   `python ../contactador.py probar-email --a-mi` verifica la configuración SMTP.
-2. **WhatsApp:** solo por la API oficial de WhatsApp Business (Meta Cloud API). Implementá `enviar_whatsapp(numero, texto)`
-   con tu token y el id del número. El sistema nunca abre una conversación por WhatsApp: pasa a ese canal únicamente
-   cuando el lead responde o pide por ahí.
-3. **Respuestas de los leads:** el sistema las lee de `respuestas/entrada/*.json`:
-   ```json
-   { "lead_id": "...", "canal": "email|whatsapp", "texto": "...", "ts": "2026-11-02T10:00:00-03:00" }
-   ```
-   Un lector del buzón (IMAP) o el webhook de WhatsApp tienen que dejar esos archivos; `ventas.py` hace el resto.
-   Para relacionar un email con su `lead_id`, buscá la dirección del remitente en `conversaciones/*.json` (`lead.email`)
-   o usá el `In-Reply-To` (cada conversación guarda `message_id`).
+Sin `email` no se contacta (salvo AR con plantilla de WhatsApp aprobada). No se escribe a nadie que esté en
+`bajas.json` ni en `leads_contactados.json` del repo, y cada lead contactado se agrega ahí.
 
 Firma, portfolio, dirección física (pie CAN-SPAM), persona para derivar, horario y límite por hora se leen de
-`../config_contacto.json` (los mismos campos que usaba el vendedor anterior).
+`../config_contacto.json`.
 
 ## Qué hace cada agente
 - **ventas.py (Agente 1):** aperturas, respuestas y seguimientos (día 3 y 7; cierre a los 14 días sin respuesta; después

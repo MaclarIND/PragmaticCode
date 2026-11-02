@@ -210,7 +210,8 @@ def procesar_leads(pb, cfg):
             c.log(AGENTE, f"{lead['lead_id']} ya contactado o dado de baja, se saltea")
             shutil.move(ruta, os.path.join(c.LEADS_PROCESADOS, nombre))
             continue
-        if not lead.get("email"):   # primer contacto siempre por email (TCPA / Ley 25.326)
+        if not lead.get("email") and not (lead["pais"] == "AR" and lead.get("telefono") and conectores.plantilla_apertura_whatsapp()):
+            # primer contacto por email (TCPA / Ley 25.326); en AR también por WhatsApp si hay plantilla aprobada
             c.log(AGENTE, f"{lead['lead_id']} sin email, no se contacta")
             shutil.move(ruta, os.path.join(c.LEADS_PROCESADOS, nombre))
             continue
@@ -224,12 +225,24 @@ def procesar_leads(pb, cfg):
                 "segmento": {"pais": lead["pais"], "tiene_web": bool(lead.get("tiene_web")), "canal": "email", "clave": segmento},
                 "mensajes": [], "estado": "abierta", "puntaje": None, "objecion_detectada": None, "procesada": False,
                 "seguimientos": 0, "negativas": 0, "objeciones_respondidas": [], "derivado": False, "creada": c.iso()}
-        var = elegir_variante(grupo_de(pb, "apertura", segmento), "email", lead["lead_id"])
-        if not var:
-            c.log(AGENTE, f"sin variantes activas de apertura para {segmento}")
-            return
-        asunto = f"Una idea para {lead['nombre']}" if conv["idioma"] != "en" else f"Quick idea for {lead['nombre']}"
-        enviar(conv, adaptar(var, lead, conv, cfg), "apertura", var["id"], cfg, asunto=asunto)
+        plantilla = conectores.plantilla_apertura_whatsapp()
+        if lead["pais"] == "AR" and lead.get("telefono") and plantilla:
+            # Apertura por WhatsApp solo con plantilla aprobada por Meta (AR). El texto es el de la plantilla, no una variante.
+            conv["segmento"]["canal"] = "whatsapp"
+            mid = conectores.enviar_whatsapp_plantilla(lead["telefono"], plantilla, "es_AR",
+                                                       [lead["nombre"], lead.get("dato_observable") or "su ficha en Google"])
+            conv["mensajes"].append({"rol": "bot", "texto": f"[plantilla {plantilla}] {lead['nombre']} / {lead.get('dato_observable')}",
+                                     "variante_id": "WA-PLANTILLA", "momento": "apertura", "ts": c.iso(), "message_id": mid})
+            conv["inicio_silencio"] = c.iso()
+            guardar(conv)
+            c.log(AGENTE, f"{lead['lead_id']} (AR/whatsapp) apertura plantilla {plantilla}")
+        else:
+            var = elegir_variante(grupo_de(pb, "apertura", segmento), "email", lead["lead_id"])
+            if not var:
+                c.log(AGENTE, f"sin variantes activas de apertura para {segmento}")
+                return
+            asunto = f"Una idea para {lead['nombre']}" if conv["idioma"] != "en" else f"Quick idea for {lead['nombre']}"
+            enviar(conv, adaptar(var, lead, conv, cfg), "apertura", var["id"], cfg, asunto=asunto)
         registrar_en_memoria_vieja(lead, "contactado")
         shutil.move(ruta, os.path.join(c.LEADS_PROCESADOS, nombre))
 
